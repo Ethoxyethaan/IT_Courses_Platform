@@ -1,11 +1,22 @@
-# itskill: Interactive Coding Courses Platform
+# IT_Courses_Platform: Interactive Coding Courses Platform
 
 A self-hosted platform for interactive programming courses (Python, SQL, etc.) with a static web UI, local LLM (Web-LLM/TeacherBot), and editable course content. Designed for easy local use and extension.
+
+## Demo (site hosted for demonstration purposes only)
+
+### Python runtime with teacher assitant:
+[Python Demo](https://itcoursesplatform.tldr.me/#/courses/python-programming-for-young-advanced-hackers/chapters/chapter_1?tab=practice) 
+
+### SQLITE runtime with teacher assitant: 
+[SQL Demo](https://itcoursesplatform.tldr.me/#/courses/sql-data-hacking-for-young-pros/chapters/chapter_1?tab=practice)
+
+### main IT Course Platform landing page
+[demo homepage ](https://itcoursesplatform.tldr.me/)
 
 ---
 
 ## Architecture & Design
-itskill is a 100% static, browser-based learning platform. All interactive features—including Python code execution, SQL database manipulation, and AI chatbot—run entirely in the browser, with no backend or server-side code required.
+IT_Courses_Platform is a 100% static, browser-based learning platform. All interactive features—including Python code execution, SQL database manipulation, and AI chatbot—run entirely in the browser, with no backend or server-side code required.
 
 ### Key Technologies
 - **Pyodide**: Runs a full Python interpreter (CPython compiled to WebAssembly) in the browser. Users can execute Python code, and course practice tasks are evaluated client-side.
@@ -25,7 +36,7 @@ itskill is a 100% static, browser-based learning platform. All interactive featu
 
 ## Project Structure & Key Files
 - **package.json** — Project metadata, dependencies, and scripts
-- **ui/index.html** — SPA entry point (open in browser)
+- **index.html** — SPA entry point (open in browser)
 - **ui/js/main.js** — Main JS bootstrapper
 - **api/courses.json** — Course index/metadata (controls visible courses)
 - **api/course/** — Per-course content folders (see below)
@@ -44,23 +55,23 @@ This project is 100% static files. No backend or server-side code is required. S
    npx http-server . -p 8080
    ```
 3. **Open in browser:**
-   [http://localhost:8080/ui/](http://localhost:8080/ui/)
+   [http://localhost:8080/](http://localhost:8080/)
 
 ### Linux (nginx)
-1. **Symlink or copy the repo to your nginx web root (e.g., /var/www/html/itskill)**
+1. **Symlink or copy the repo to your nginx web root (e.g., /var/www/html/IT_Courses_Platform)**
 2. **Add to nginx config:**
    ```nginx
    server {
        listen 8080;
        server_name localhost;
-       root /var/www/html/itskill;
+       root /var/www/html/IT_Courses_Platform;
        location / {
            try_files $uri $uri/ =404;
        }
    }
    ```
 3. **Reload nginx and open:**
-   [http://localhost:8080/ui/](http://localhost:8080/ui/)
+   [http://localhost:8080/](http://localhost:8080/)
 
 ---
 
@@ -75,7 +86,7 @@ This project is 100% static files. No backend or server-side code is required. S
 ---
 
 ## Web UI & Dev Entry Points
-- **SPA entry:** `ui/index.html`, `ui/js/main.js`
+- **SPA entry:** `index.html`, `ui/js/main.js`
 - **API client:** `ui/js/services/apiClient.js` (fetches `api/courses.json`)
 - **Router/state:** `ui/js/state/router.js`, `ui/js/state/appState.js`
 - **TeacherBot/Web‑LLM config:** `ui/js/services/teacherBotService.js`, `ui/js/services/teacherBot/`
@@ -98,7 +109,7 @@ This project is 100% static files. No backend or server-side code is required. S
 ---
 
 ## Smoke Tests / Sanity Checks
-- Start server, open [http://localhost:8080/ui/](http://localhost:8080/ui/)
+- Start server, open [http://localhost:8080/](http://localhost:8080/)
 - Browser console: should show "Loading courses..." and no fetch error for `api/courses.json`
 - Course list loads; navigating to a chapter shows content from `api/course/.../theory.md`
 - If using TeacherBot/Web‑LLM: `window.debugWebLLMConfig` is present; no network errors in console
@@ -132,7 +143,7 @@ This project is 100% static files. No backend or server-side code is required. S
   npx http-server . -p 8080
   ```
 - **Open UI:**
-  [http://localhost:8080/ui/](http://localhost:8080/ui/)
+  [http://localhost:8080/](http://localhost:8080/)
 
 ---
 

@@ -2,11 +2,15 @@
 
 A self-hosted platform for interactive programming courses (Python, SQL, etc.) with a static web UI, local LLM (Web-LLM/TeacherBot), and editable course content. Designed for easy local use and extension.
 
-## Demo
+## Demo (site hosted for demonstration purposes only)
 
+### Python runtime with teacher assitant:
 [Python Demo](https://itcoursesplatform.tldr.me/#/courses/python-programming-for-young-advanced-hackers/chapters/chapter_1?tab=practice) 
+
+### SQLITE runtime with teacher assitant: 
 [SQL Demo](https://itcoursesplatform.tldr.me/#/courses/sql-data-hacking-for-young-pros/chapters/chapter_1?tab=practice)
 
+### main IT Course Platform landing page
 [demo homepage ](https://itcoursesplatform.tldr.me/)
 
 ---

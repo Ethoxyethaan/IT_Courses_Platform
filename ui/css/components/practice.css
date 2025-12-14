@@ -296,7 +296,6 @@
 .practice-editor .ace_editor,
 .practice-editor .ace_scroller {
   background: #181a1b !important;
-  background-color: #181a1b !important;
   transition: none !important;
 }
 
@@ -318,14 +317,53 @@
   .practice-container {
     display: flex;
     flex-direction: column;
+    height: auto;
+    overflow: visible;
   }
 
   .practice-panel {
     margin-bottom: 0.75rem;
+    min-height: 250px;
+    flex: 0 0 auto;
+  }
+
+  /* Ensure proper order: assignment -> editor -> console -> chat */
+  .practice-assignment-panel {
+    order: 1;
+  }
+
+  .practice-editor-panel {
+    order: 2;
+    min-height: 300px;
+  }
+
+  .practice-console-panel {
+    order: 3;
+  }
+
+  .practice-chat-panel {
+    order: 4;
   }
 
   .practice-console {
-    max-height: 220px;
+    max-height: none;
+    min-height: 150px;
+  }
+
+  .practice-editor,
+  .practice-editor-col,
+  .practice-editor-row {
+    min-height: 250px;
+  }
+
+  /* Ensure assignment body has reasonable height */
+  .practice-assignment-body {
+    min-height: 150px;
+  }
+
+  /* Ensure chat has reasonable height */
+  .practice-chat-body {
+    min-height: 150px;
   }
 }
 
@@ -334,7 +372,29 @@
     height: auto;
   }
 
+  .practice-panel {
+    min-height: 200px;
+  }
+
+  .practice-editor-panel {
+    min-height: 300px;
+  }
+
+  .practice-editor,
+  .practice-editor-col,
+  .practice-editor-row {
+    min-height: 250px;
+  }
+
+  .practice-assignment-body {
+    min-height: 120px;
+  }
+
   .practice-console {
-    max-height: none;
+    min-height: 120px;
+  }
+
+  .practice-chat-body {
+    min-height: 120px;
   }
 }

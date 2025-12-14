@@ -116,6 +116,15 @@ export async function renderPracticeTab(course, chapter, tabContentEl) {
     runButton,
   });
 
+  // Add Ctrl+Enter shortcut to Ace Editor
+  if (practiceEditor) {
+    practiceEditor.commands.addCommand({
+      name: 'runCode',
+      bindKey: { win: 'Ctrl-Enter', mac: 'Command-Enter' },
+      exec: runHandler
+    });
+  }
+
   // Create validate handler
   const { handler: validateHandler } = createValidateHandler({
     practiceEditor,

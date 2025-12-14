@@ -1,27 +1,14 @@
-"""
-Code vs Programming Storyboard
-------------------------------
-
-Read the comments below. Some describe PROGRAMMING (planning, designing,
-thinking about the problem). Others are actual CODE (instructions for
-Python to run).
-
-TASK:
-  1. Go through each line and decide: is it PROGRAMMING or CODE?
-  2. You can write your answers in a separate notebook or add comments
-     like # PROGRAMMING or # CODE at the end of each line.
-"""
+# Code vs Programming - mark lines as instructed in the assignment
 
 # Step 1: Decide what the program should do.
-# Step 2: We want to greet the user with their name.
+# Step 2: Greet the user by name.
 
-# Ask the user for their name and store it in a variable.
-name = input("What is your name? ")
+# Note: input() may not work in the online editor. A helper function getName() is provided below and returns a hardcoded name.
+# If you don't yet know how to define functions, ignore its definition and just use it.
 
-# Plan: If the user does not type anything, we will still say hello.
+def getName():  # CODE
+    return "Alex"  # CODE
 
-# Print a friendly greeting.
-print("Hello, " + name + "!")
+# TODO: Ask the user for their name and store it in a variable. use the function getName()
 
-# Step 3: Later we could add more features, like asking for their age.
-
+# TODO: Print a friendly greeting. using the person's name stored in the variable.

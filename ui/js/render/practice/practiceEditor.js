@@ -1,3 +1,5 @@
+//author: https://github.com/nhermab
+//licence: MIT
 export let practiceEditor = null;
 
 export function setPracticeEditor(editor) {

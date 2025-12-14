@@ -77,14 +77,24 @@
   margin-bottom: 0;
   box-shadow: none;
   border: 1px solid #313335;
+  transition: background 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 
 .teacher-message {
   margin-bottom: 0.55rem;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1), transform 0.35s cubic-bezier(0.4,0,0.2,1);
 }
 
 .teacher-message:last-child {
   margin-bottom: 0;
+}
+
+/* Make messages visible when JS toggles the is-visible class */
+.teacher-message.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .teacher-message-label {
@@ -254,6 +264,12 @@
   color: rgba(209,213,219,0.9);
   margin-top: 0.25rem;
   margin-bottom: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.teacher-typing-indicator[style*="display: block"] {
+  opacity: 1;
 }
 
 .teacher-typing-label {

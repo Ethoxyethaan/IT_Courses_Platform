@@ -1,26 +1,9 @@
-# Talk to the Python REPL
-# ------------------------
-# This file gives you ideas for what to try in the Python REPL.
-# You DO NOT run this file directly. Instead:
-#   1. Open a Python REPL (for example, in Mu or another editor).
-#   2. Type the lines below one by one.
-#   3. Press Enter after each line and watch what happens.
+# attachments/repl_playground.py - minimal starter for chatbot validation
+# The chatbot expects exactly three printed lines when this file is run.
 
-# Try some math:
-1 + 2
-5 * 10
-10 / 3
+#print first Hello, World!
 
-# Try some text (strings):
-"Python"
-"Hello" + " " + "World"
+#print seond message with result 3
 
-# Try the print function:
-print("Hello, World!")
-print("2 + 2 is", 2 + 2)
-
-# Try mixing things up:
-print("Python is fun!")
-
-# After you are done experimenting, close the REPL.
+#print third message with result 50
 

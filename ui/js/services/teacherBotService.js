@@ -9,8 +9,8 @@ export {
   debugWebLLMConfig
 } from './teacherBot/engine.js';
 
-// Re-export features with original names for backward compatibility
 export { askQuestion as askTeacherBotQuestion } from './teacherBot/features.js';
 export { gradeCode as gradeWithTeacherBot } from './teacherBot/features.js';
 export { validateAssignment as validateAssignmentWithTeacher } from './teacherBot/features.js';
 
+export { setTeacherBotDebug } from './teacherBot/features.js';

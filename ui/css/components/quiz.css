@@ -52,11 +52,26 @@
   box-sizing: border-box;
 }
 
-.quiz-options label:hover {
+/* Only apply the original hover effect when the option is NOT marked correct/incorrect */
+.quiz-options label:not(.is-correct):not(.is-incorrect):hover {
   background: #181a1b;
   border-color: #b0b0b0;
   color: #e6e6e6;
   box-shadow: 0 2px 8px rgba(0,0,0,0.7);
+}
+
+/* Subtle brighten on hover for correct/incorrect states so their color isn't overridden */
+.quiz-option.is-correct:hover,
+.quiz-option-letter.is-correct:hover {
+  filter: brightness(1.06);
+  /* keep the green emphasis but don't change the color to gray */
+  box-shadow: 0 0 0 2px #2ecc40, 0 4px 14px rgba(46,204,64,0.14);
+}
+
+.quiz-option.is-incorrect:hover,
+.quiz-option-letter.is-incorrect:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 0 0 2px #ff4d4f, 0 4px 14px rgba(255,77,79,0.12);
 }
 
 .quiz-options input[type="radio"] {
@@ -70,9 +85,11 @@
   outline: none;
 }
 
-/* When an option is selected, visually emphasize its label */
-.quiz-options input[type="radio"]:checked + span,
-.quiz-options input[type="radio"]:checked + * {
+/* When an option is selected, visually emphasize its label
+   Restrict this rule so it doesn't override the explicit is-correct/is-incorrect states
+   (those should keep their green/red backgrounds even when hovered or checked). */
+.quiz-options label:not(.is-correct):not(.is-incorrect) input[type="radio"]:checked + span,
+.quiz-options label:not(.is-correct):not(.is-incorrect) input[type="radio"]:checked + * {
   /* selector kept simple; structural enhancement could be added later if needed */
   border-color: #b0b0b0;
   background: #181a1b;
@@ -117,6 +134,7 @@
   width: 100%;
   /* Allow content to wrap instead of overflowing horizontally */
   flex-wrap: wrap;
+  box-sizing: border-box; /* ensure scaling and borders don't affect layout unexpectedly */
 }
 
 .quiz-option-letter {
@@ -133,14 +151,61 @@
   color: #e6e6e6;
   background: #313335;
   box-shadow: none;
+  box-sizing: border-box;
 }
 
-.quiz-option-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  /* Wrap long words/URLs inside the available width */
-  word-break: break-word;
-  overflow-wrap: anywhere;
+.quiz-option.is-correct {
+  border-color: #2ecc40;
+  background: linear-gradient(90deg, #263e2e 0%, #1e2e1e 100%);
+  color: #eaffea;
+  box-shadow: 0 0 0 2px #2ecc40, 0 2px 12px rgba(46,204,64,0.12);
+  /* removed transform scaling to prevent overflow/box-size issues */
+}
+.quiz-option.is-incorrect {
+  border-color: #ff4d4f;
+  background: linear-gradient(90deg, #3e2626 0%, #2e1e1e 100%);
+  color: #ffeaea;
+  box-shadow: 0 0 0 2px #ff4d4f, 0 2px 12px rgba(255,77,79,0.12);
+  /* removed transform scaling to avoid layout issues */
+}
+.quiz-option-letter.is-correct {
+  background: #2ecc40;
+  color: #fff;
+  box-shadow: 0 0 8px #2ecc40cc;
+  border: 2px solid #2ecc40;
+}
+.quiz-option-letter.is-incorrect {
+  background: #ff4d4f;
+  color: #fff;
+  box-shadow: 0 0 8px #ff4d4fcc;
+  border: 2px solid #ff4d4f;
+}
+.quiz-feedback.is-correct {
+  background: #eaffea;
+  color: #1e4d2b;
+  border-left: 5px solid #2ecc40;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.6rem 1rem;
+  box-shadow: 0 2px 8px rgba(46,204,64,0.08);
+  animation: quiz-feedback-pop 0.3s cubic-bezier(.5,1.8,.5,1) 1;
+}
+.quiz-feedback.is-incorrect {
+  background: #ffeaea;
+  color: #7a1a1a;
+  border-left: 5px solid #ff4d4f;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.6rem 1rem;
+  box-shadow: 0 2px 8px rgba(255,77,79,0.08);
+  animation: quiz-feedback-pop 0.3s cubic-bezier(.5,1.8,.5,1) 1;
+}
+@keyframes quiz-feedback-pop {
+  0% { transform: scale(0.95); opacity: 0; }
+  80% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* Make quiz spacing a bit more generous on smaller screens */
@@ -156,4 +221,32 @@
   .quiz-options label {
     padding: 0.55rem 0.5rem;
   }
+}
+
+/* Ensure correct/incorrect backgrounds stay applied when hovered (higher specificity) */
+.quiz-options label.quiz-option.is-correct:hover,
+.quiz-options .quiz-option.is-correct:hover {
+  background: linear-gradient(90deg, #263e2e 0%, #1e2e1e 100%);
+  color: #eaffea;
+  filter: brightness(1.06);
+  box-shadow: 0 0 0 2px #2ecc40, 0 4px 14px rgba(46,204,64,0.14);
+}
+
+.quiz-options label.quiz-option.is-incorrect:hover,
+.quiz-options .quiz-option.is-incorrect:hover {
+  background: linear-gradient(90deg, #3e2626 0%, #2e1e1e 100%);
+  color: #ffeaea;
+  filter: brightness(1.06);
+  box-shadow: 0 0 0 2px #ff4d4f, 0 4px 14px rgba(255,77,79,0.12);
+}
+
+/* Prevent the :checked + sibling rules from overriding explicit is-correct/is-incorrect styling */
+.quiz-options label.is-correct input[type="radio"]:checked + span,
+.quiz-options label.is-correct input[type="radio"]:checked + *,
+.quiz-options label.is-incorrect input[type="radio"]:checked + span,
+.quiz-options label.is-incorrect input[type="radio"]:checked + * {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: inherit;
 }

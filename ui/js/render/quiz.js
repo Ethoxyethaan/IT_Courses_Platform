@@ -1,6 +1,8 @@
 //author: https://github.com/nhermab
 //licence: MIT
 
+import { renderMarkdownToHtml } from '../utils/markdown.js';
+
 /**
  * Ensure quiz data is loaded, using provided cache helpers.
  *
@@ -60,11 +62,55 @@ export function renderQuiz({ container, quiz }) {
     questionEl.className = 'quiz-question';
 
     const promptEl = document.createElement('div');
-    promptEl.textContent = question.prompt;
+    promptEl.innerHTML = renderMarkdownToHtml(question.prompt || '');
     questionEl.appendChild(promptEl);
 
     const optionsList = document.createElement('ul');
     optionsList.className = 'quiz-options';
+
+    const feedbackEl = document.createElement('div');
+    feedbackEl.className = 'quiz-feedback';
+
+    // Define explanations and helpers in parent scope for checkAnswer
+    const explanations = question.explanations || {};
+    const byOptionId = explanations.byOptionId || {};
+    const overview = explanations.overview;
+
+    // Helper to clear all option label highlights
+    function clearOptionColors() {
+      optionsList.querySelectorAll('label.quiz-option').forEach(label => {
+        label.classList.remove('is-correct', 'is-incorrect');
+        const orb = label.querySelector('.quiz-option-letter');
+        if (orb) orb.classList.remove('is-correct', 'is-incorrect');
+      });
+    }
+
+    // Helper to check answer and update UI
+    function checkAnswer(selectedInput) {
+      clearOptionColors();
+      if (!selectedInput) {
+        feedbackEl.textContent = 'Please choose an answer first.';
+        feedbackEl.className = 'quiz-feedback is-incorrect';
+        return;
+      }
+      const selectedId = selectedInput.value;
+      const chosenOption = (question.options || []).find((opt) => opt.id === selectedId);
+      const label = selectedInput.closest('label.quiz-option');
+      const orb = label ? label.querySelector('.quiz-option-letter') : null;
+      if (chosenOption && chosenOption.isCorrect) {
+        const detail = overview || byOptionId[selectedId] || '';
+        const prefix = 'Correct!';
+        feedbackEl.textContent = detail ? `${prefix} ${detail}` : prefix;
+        feedbackEl.className = 'quiz-feedback is-correct';
+        if (label) label.classList.add('is-correct');
+        if (orb) orb.classList.add('is-correct');
+      } else {
+        feedbackEl.textContent = byOptionId[selectedId] || overview || 'Not quite. Try again!';
+        feedbackEl.className = 'quiz-feedback is-incorrect';
+        if (label) label.classList.add('is-incorrect');
+        if (orb) orb.classList.add('is-incorrect');
+      }
+    }
 
     (question.options || []).forEach((option, index) => {
       const li = document.createElement('li');
@@ -76,13 +122,18 @@ export function renderQuiz({ container, quiz }) {
       input.name = question.id;
       input.value = option.id;
 
+      // Automatically check answer on selection
+      input.addEventListener('change', (e) => {
+        checkAnswer(e.target);
+      });
+
       const letter = document.createElement('span');
       letter.className = 'quiz-option-letter';
       letter.textContent = String.fromCharCode(65 + index); // A, B, C, ...
 
       const textSpan = document.createElement('span');
       textSpan.className = 'quiz-option-text';
-      textSpan.textContent = option.label;
+      textSpan.innerHTML = renderMarkdownToHtml(option.label || '');
 
       label.appendChild(input);
       label.appendChild(letter);
@@ -92,43 +143,9 @@ export function renderQuiz({ container, quiz }) {
       optionsList.appendChild(li);
     });
 
-    const feedbackEl = document.createElement('div');
-    feedbackEl.className = 'quiz-feedback';
-
-    const checkButton = document.createElement('button');
-    checkButton.type = 'button';
-    checkButton.textContent = 'Check answer';
-    checkButton.className = 'quiz-button';
-    checkButton.addEventListener('click', () => {
-      const selected = optionsList.querySelector('input:checked');
-      if (!selected) {
-        feedbackEl.textContent = 'Please choose an answer first.';
-        feedbackEl.className = 'quiz-feedback is-incorrect';
-        return;
-      }
-      const selectedId = selected.value;
-      const chosenOption = (question.options || []).find((opt) => opt.id === selectedId);
-      const correctOption = (question.options || []).find((opt) => opt.isCorrect);
-
-      const explanations = question.explanations || {};
-      const byOptionId = explanations.byOptionId || {};
-      const overview = explanations.overview;
-
-      if (chosenOption && chosenOption.isCorrect) {
-        // For correct answers, prefer the overview explanation, since it best describes why it's correct.
-        const detail = overview || byOptionId[selectedId] || '';
-        const prefix = 'Correct!';
-        feedbackEl.textContent = detail ? `${prefix} ${detail}` : prefix;
-        feedbackEl.className = 'quiz-feedback is-correct';
-      } else {
-        const explanation = byOptionId[selectedId] || overview || 'Not quite. Try again!';
-        feedbackEl.textContent = explanation;
-        feedbackEl.className = 'quiz-feedback is-incorrect';
-      }
-    });
-
+    // Remove the check button, as checking is now automatic
+    // questionEl.appendChild(checkButton);
     questionEl.appendChild(optionsList);
-    questionEl.appendChild(checkButton);
     questionEl.appendChild(feedbackEl);
 
     root.appendChild(questionEl);
@@ -141,4 +158,3 @@ export function renderQuiz({ container, quiz }) {
   container.innerHTML = '';
   container.appendChild(root);
 }
-

@@ -20,37 +20,15 @@ export const ASK_SYSTEM_PROMPT = [
  * System prompt for grading code.
  */
 export const GRADE_SYSTEM_PROMPT = [
-  "You are a lenient, friendly coding teacher.",
-  "If the code looks like a valid attempt, give a high score (80-100).",
-  "If the code runs but is imperfect, give a passing score (60+).",
-  "Only FAIL (score < 50) if the code is empty, completely unrelated, or has broken syntax.",
-  "Start response with: PASS/FAIL and Score: X/100."
+  "You are a helpful coding teacher.",
+  "Grade the student's work based on the Assignment, Code, and Output.",
+  "If the output matches the assignment requirements and the code is decent, say PASSED.",
+  "If there are errors or the output is wrong, say FAILED.",
+  "Provide a short feedback explaining your decision.",
+  "Start your response with 'PASSED' or 'FAILED' followed by your feedback."
 ].join(' ');
 
-/**
- * System prompt for validating assignments.
- */
-export const VALIDATE_SYSTEM_PROMPT = [
-  'You are a very lenient and forgiving coding teacher grading a beginner.',
-  'Your goal is to PASS the student whenever possible.',
-  '',
-  'PASSING RULES (Prioritize these):',
-  '1. TRUST THE OUTPUT: If the "Standard Output" shows the correct result (e.g., correct printed text), PASS THE STUDENT, even if the code looks messy.',
-  '2. IGNORE COMMENTS: Do not fail the student because of "TODO" comments or commented-out code. Only look at active code.',
-  '3. IGNORE TYPOS: If the variable names are slightly different but the logic works, PASS.',
-  '4. IGNORE WARNINGS: If there is output, ignore "Standard Error" warnings.',
-  '',
-  'ONLY FAIL IF:',
-  '- The code is completely empty.',
-  '- There is a syntax error preventing ANY output.',
-  '- The output is completely wrong (e.g., asked for "Hello", got "Goodbye").',
-  '',
-  'RESPONSE FORMAT:',
-  '- Start with: "Overall result: PASSED" or "Overall result: NOT PASSED"',
-  '- If PASSED: Say "Good job!" and mentioning one thing they did right.',
-  '- If NOT PASSED: Give 1 very specific hint.',
-  '- Keep response under 100 words.'
-].join('\n');
+
 
 /**
  * Build prompt for asking a question.
@@ -81,44 +59,27 @@ export function buildAskPrompt(contextText, question, hasError) {
  *
  * @param {string} assignmentText - Assignment description
  * @param {string} userCode - Student's code
+ * @param {string} outputText - Execution output
  * @returns {{ systemPrompt: string, userPrompt: string }}
  */
-export function buildGradePrompt(assignmentText, userCode) {
+export function buildGradePrompt(assignmentText, userCode, outputText) {
   const userPrompt = `Assignment:
 ${assignmentText}
 
-Student's code:
+Student's Code:
 \`\`\`
 ${userCode}
 \`\`\`
 
-Grade this code leniently. Provide: Pass/Fail, Score (0-100), and concise feedback.`;
+Execution Output:
+\`\`\`
+${outputText}
+\`\`\`
+
+Grade this student submission (Student's Code AND Execution Output). Is it correct?`;
 
   return {
     systemPrompt: GRADE_SYSTEM_PROMPT,
-    userPrompt
-  };
-}
-
-/**
- * Build prompt for validating an assignment.
- *
- * @param {string} contextText - Assembled context text
- * @returns {{ systemPrompt: string, userPrompt: string }}
- */
-export function buildValidatePrompt(contextText) {
-  const userPrompt = [
-    contextText,
-    '',
-    '=== YOUR JUDGMENT ===',
-    'Based on the OUTPUT above: Did the code basically do what was asked?',
-    'Remember: Be forgiving. If the output looks roughly correct, say PASSED.',
-    'Ignore "TODO" comments.',
-    'Reply starting with "Overall result: PASSED" or "Overall result: NOT PASSED".',
-  ].join('\n');
-
-  return {
-    systemPrompt: VALIDATE_SYSTEM_PROMPT,
     userPrompt
   };
 }

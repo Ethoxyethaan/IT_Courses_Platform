@@ -1,3 +1,5 @@
+//author: https://github.com/nhermab
+//licence: MIT
 import { fetchPracticeAttachmentFile } from '../../services/apiClient.js';
 import { setChapterContent } from '../../state/appState.js';
 import { getRunnerForLanguage } from '../../runners/index.js';

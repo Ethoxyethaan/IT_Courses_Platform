@@ -4,6 +4,10 @@ import { getRunnerForLanguage } from '../../runners/index.js';
 import { validateAssignmentWithTeacher, initTeacherBot, getTeacherBotStatus } from '../../services/teacherBotService.js';
 import { initTeacherBotPanel } from '../teacherBotPanel.js';
 import { formatSqlOutput, formatPythonOutput, getSqlStatusMessage } from './outputFormatter.js';
+import { updateConsoleOutput } from './outputUpdater.js';
+import { createTeacherContext } from './teacherContext.js';
+import { runCode, prepareLastRun } from './runExecutor.js';
+import { ensureTeacherPanel, initFreshTeacherPanel, appendVerdictMessages } from './teacherPanelManager.js';
 
 /**
  * Create and attach validate button event handler.
@@ -56,9 +60,31 @@ export function createValidateHandler({
     consoleEl.textContent = 'Running code before teacher validation...';
     runStatus.textContent = `Running ${editorLanguage}...`;
 
+    // Clear chat immediately and initialize a fresh panel without welcome
+    chatBody.innerHTML = '';
+    let freshTeacherApi = initFreshTeacherPanel({
+      container: chatBody,
+      getContext: () => createTeacherContext({
+        course,
+        chapter,
+        activeAssignment,
+        activeTemplate,
+        languageId: activeTemplate?.language || 'python',
+        codeFiles: [],
+        practice,
+        markdownKey: activeAssignment.id,
+        lastRun: null,
+      }),
+      showWelcome: false,
+    });
+
+    // Disable input while we run and validate so the user can't add messages
+    if (freshTeacherApi && typeof freshTeacherApi.disableInput === 'function') {
+      freshTeacherApi.disableInput('Teacher is validating your assignment...');
+    }
+
     try {
-      const runner = getRunnerForLanguage(editorLanguage);
-      const result = await runner.run(code);
+      const result = await runCode(code, editorLanguage);
       lastRunResult = result;
 
       // Update console output (same logic as run button)
@@ -80,21 +106,18 @@ export function createValidateHandler({
         });
       }
 
-      const lastRunFromHandler = getLastRunResult ? getLastRunResult() : lastRunResult;
-      const lastRun = {
-        status: lastRunFromHandler ? 'completed' : 'not_run',
-        stdout: lastRunFromHandler?.stdout || '',
-        stderr: lastRunFromHandler?.stderr || '',
-        error: lastRunFromHandler?.error || '',
-        summary: runStatus.textContent || '',
-        consoleDisplay: consoleEl.textContent || '',
-      };
+      const lastRun = prepareLastRun({
+        getLastRunResult,
+        lastRunResultFromRun: lastRunResult,
+        runStatusEl: runStatus,
+        consoleEl,
+      });
 
       const markdownKey = activeAssignment.id;
 
-      // Initialize teacher panel if needed
+      // Ensure teacher panel is ready (reuse ensureTeacherPanel but pass existing api if any)
       teacherPanelApi = await ensureTeacherPanel({
-        teacherPanelApi,
+        teacherPanelApi: freshTeacherApi || teacherPanelApi,
         chatBody,
         course,
         chapter,
@@ -126,7 +149,7 @@ export function createValidateHandler({
       // Clear any status message after validation is complete
       if (runStatus) runStatus.textContent = '';
 
-      // Re-initialize fresh teacher panel and show validation result
+      // Replace the panel with a new one that shows validation results (no welcome)
       chatBody.innerHTML = '';
       teacherPanelApi = initTeacherBotPanel({
         container: chatBody,
@@ -141,28 +164,35 @@ export function createValidateHandler({
           markdownKey,
           lastRun,
         }),
+        showWelcome: false, // Do not show welcome message on validation
       });
+
+      // Re-enable input after validation completes
+      if (teacherPanelApi && typeof teacherPanelApi.enableInput === 'function') {
+        teacherPanelApi.enableInput();
+      }
 
       // Insert fake user message before validation result
       if (teacherPanelApi && typeof teacherPanelApi.appendUserMessage === 'function') {
         teacherPanelApi.appendUserMessage('can you validate my assignment?');
       }
 
-      // Add positive or negative message based on validation result
+      // Display TeacherBot feedback first
+      const feedbackText = validation.feedbackText || 'No feedback provided.';
+
+      // Add verdict message after the feedback
       let verdictMessage = '';
       if (validation && typeof validation.feedbackText === 'string') {
         const passed = /pass(ed)?|success|congrat/i.test(validation.feedbackText);
         if (passed) {
-          verdictMessage = '✅ Congratulations! Your assignment passed all checks.';
+          verdictMessage = '\n✅ Congratulations! Your assignment passed all checks.';
         } else {
-          verdictMessage = '❌ Your assignment did not pass all checks. Please review the feedback below.';
+          verdictMessage = '\n❌ Your assignment did not pass all checks. Please review the feedback above.';
         }
       }
-      if (verdictMessage && teacherPanelApi && typeof teacherPanelApi.appendAssistantMessage === 'function') {
-        teacherPanelApi.appendAssistantMessage(verdictMessage);
-      }
 
-      const finalMessage = validation.feedbackText || 'No feedback provided.';
+      // Combine feedback with verdict message
+      const finalMessage = feedbackText + verdictMessage;
       if (teacherPanelApi && typeof teacherPanelApi.appendAssistantMessage === 'function') {
         teacherPanelApi.appendAssistantMessage(finalMessage);
       }
@@ -170,6 +200,12 @@ export function createValidateHandler({
       console.error('Teacher validation run failed:', err);
       consoleEl.textContent = `Failed to run code for teacher validation. ${err.message || err}`;
       runStatus.textContent = 'Validation run failed';
+      // On error, ensure inputs are re-enabled so user can continue
+      if (teacherPanelApi && typeof teacherPanelApi.enableInput === 'function') {
+        teacherPanelApi.enableInput();
+      } else if (freshTeacherApi && typeof freshTeacherApi.enableInput === 'function') {
+        freshTeacherApi.enableInput();
+      }
     }
 
     validateButton.disabled = false;
@@ -179,109 +215,5 @@ export function createValidateHandler({
   return {
     handler,
     getTeacherPanelApi: () => teacherPanelApi,
-  };
-}
-
-/**
- * Update console output based on run result.
- */
-function updateConsoleOutput({ result, editorLanguage, consoleEl, runStatus }) {
-  if (editorLanguage === 'sql') {
-    consoleEl.textContent = formatSqlOutput(result);
-    runStatus.textContent = getSqlStatusMessage(result);
-  } else {
-    const { text, verdict } = formatPythonOutput(result);
-    consoleEl.textContent = text;
-    runStatus.textContent = verdict;
-  }
-}
-
-/**
- * Ensure teacher panel is initialized and ready.
- */
-async function ensureTeacherPanel({
-  teacherPanelApi,
-  chatBody,
-  course,
-  chapter,
-  activeAssignment,
-  activeTemplate,
-  languageId,
-  codeFiles,
-  practice,
-  markdownKey,
-  lastRun,
-  runStatus,
-  consoleEl
-}) {
-  let api = teacherPanelApi;
-
-  if (!api) {
-    api = initTeacherBotPanel({
-      container: chatBody,
-      getContext: () => createTeacherContext({
-        course,
-        chapter,
-        activeAssignment,
-        activeTemplate,
-        languageId,
-        codeFiles,
-        practice,
-        markdownKey,
-        lastRun,
-      }),
-    });
-  }
-
-  const status = getTeacherBotStatus();
-  if (status.status !== 'ready') {
-    if (api && api.showConnectingStatus) {
-      api.showConnectingStatus();
-    }
-    runStatus.textContent = 'Preparing your teacher for validation...';
-    await initTeacherBot();
-
-    const after = getTeacherBotStatus();
-    if (after.status !== 'ready') {
-      consoleEl.textContent += '\n\nYour teacher could not connect on this device right now for validation.';
-      runStatus.textContent = 'Teacher not available for validation';
-      throw new Error('Teacher not available');
-    }
-  }
-
-  // Show typing indicator
-  if (api && api.showTyping) {
-    api.showTyping();
-  }
-
-  return api;
-}
-
-/**
- * Create teacher context object.
- */
-function createTeacherContext({
-  course,
-  chapter,
-  activeAssignment,
-  activeTemplate,
-  languageId,
-  codeFiles,
-  practice,
-  markdownKey,
-  lastRun
-}) {
-  return {
-    courseId: String(course.id),
-    chapterId: String(chapter.id || chapter.chapterId || 'chapter_1'),
-    assignmentId: String(activeAssignment.id),
-    templatePath: activeTemplate ? activeTemplate.path : '',
-    languageId,
-    codeFiles,
-    assignment: {
-      title: activeAssignment.title || '',
-      descriptionMarkdown: practice.assignmentMarkdown[markdownKey] || '',
-    },
-    environment: { lastRun },
   };
 }

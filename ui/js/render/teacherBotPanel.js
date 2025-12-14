@@ -13,10 +13,13 @@ import { upgradeMarkdownCodeBlocks } from '../utils/markdownAceEnhancer.js';
  * @param {HTMLElement} opts.container - The DOM element to render into.
  * @param {() => Object} opts.getContext - Function returning the current
  *   TeacherBotRequest base data (without mode / userQuestion).
+ * @param {boolean} [opts.showWelcome=true] - Whether to show the welcome message
+ *   from the teacher on initial load. Set to false for validation flows that
+ *   don't need the extra guidance.
  * @returns {{appendAssistantMessage(markdown: string): void}} a tiny API
  *   that allows callers to append an assistant message programmatically.
  */
-export function initTeacherBotPanel({ container, getContext }) {
+export function initTeacherBotPanel({ container, getContext, showWelcome = true }) {
   if (!container) return { appendAssistantMessage() {} };
 
   container.innerHTML = '';
@@ -78,14 +81,21 @@ export function initTeacherBotPanel({ container, getContext }) {
     bodyEl.className = 'teacher-message-body';
 
     // Use existing markdown renderer to keep look & feel consistent
-    const html = renderMarkdownToHtml(markdownText);
-    bodyEl.innerHTML = html;
+    bodyEl.innerHTML = renderMarkdownToHtml(markdownText);
 
     msg.appendChild(labelEl);
     msg.appendChild(bodyEl);
 
     messagesEl.appendChild(msg);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    // Fade/slide the message in on the next frame to avoid it being hidden by default CSS
+    window.requestAnimationFrame(() => {
+      msg.classList.add('is-visible');
+      // After the frame, ensure the panel scrolls to show the new message.
+      window.requestAnimationFrame(() => {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      });
+    });
 
     // Enhance any code blocks in this message with Ace, reusing the global markdown enhancer
     upgradeMarkdownCodeBlocks(bodyEl);
@@ -223,8 +233,8 @@ export function initTeacherBotPanel({ container, getContext }) {
   });
 
   // Initial greeting message from Teacher
-  //appendMessage('assistant', 'Hi! If you need help, just ask your teacher. You can paste your code, ask about an error, or get an explanation of the assignment.');
-  appendMessage('assistant', `## 💻 Ready to conquer this assignment?
+  if (showWelcome) {
+    appendMessage('assistant', `## 💻 Ready to conquer this assignment?
 
 I'm your **course teacher**, here to act as your pair programmer for this specific task.
 
@@ -235,6 +245,7 @@ I'm your **course teacher**, here to act as your pair programmer for this specif
 
 > **To get started:**
 > *just type your question or message below!* 👇`);
+  }
   // If the model happens to already be initializing on first render, start showing
   // the connecting status so the user sees that the teacher is on the way.
   // const initialStatus = getTeacherBotStatus();
@@ -264,6 +275,20 @@ I'm your **course teacher**, here to act as your pair programmer for this specif
     hideTyping() {
       typingEl.style.display = 'none';
       setBusy(false);
-    }
+    },
+    // Programmatically disable the input (prevent user from sending messages)
+    disableInput(hint) {
+       // Keep the typing indicator visible to show activity unless caller passed no hint
+       if (hint) {
+         statusEl.textContent = hint;
+         statusEl.style.display = 'block';
+       }
+       typingEl.style.display = 'block';
+       setBusy(true, hint || 'The teacher is reviewing your assignment...');
+     },
+     enableInput() {
+       typingEl.style.display = 'none';
+       setBusy(false);
+     }
   };
 }

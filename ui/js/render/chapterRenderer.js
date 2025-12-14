@@ -1,3 +1,5 @@
+//author: https://github.com/nhermab
+//licence: MIT
 import { getState, getChapterContent, setChapterContent } from '../state/appState.js';
 import { fetchChapterQuiz } from '../services/apiClient.js';
 import { ensureQuizLoaded, renderQuiz } from './quiz.js';

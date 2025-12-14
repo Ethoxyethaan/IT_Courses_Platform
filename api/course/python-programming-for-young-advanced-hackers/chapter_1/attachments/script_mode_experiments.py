@@ -1,13 +1,8 @@
-# Script Mode Mini Experiments
-# ----------------------------
-# This script starts with a single print statement.
-# TASK 1: Run it and see what it does.
-# TASK 2: Add TWO MORE print lines below so that the script prints
-#         three different messages, one on each line.
+# Script Mode Mini Show - starter file
+# Add two more print(...) lines below so the script prints three different non-empty lines.
 
 print("This is my first script line!")
 
-# Example (you can change the messages):
-# print("This is my second line.")
-# print("This is my third line.")
+# TODO: Add a second print(...) line below
 
+# TODO: Add a third print(...) line below

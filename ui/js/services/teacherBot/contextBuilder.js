@@ -2,9 +2,6 @@
 //licence: MIT
 // Context building utilities for TeacherBot
 
-// Token limits
-const MAX_CONTEXT_TOKENS = 6000;
-
 /**
  * Truncate text to approximate token limit.
  *
@@ -50,12 +47,13 @@ export function buildQuestionContext(request) {
   if (hasError && lastRun.status !== 'not_run') {
     contextParts.push('=== CONSOLE ERROR ===');
     if (lastRun.error) {
-      const errorText = truncateToTokens(lastRun.error, 800);
+      // sanitize runner noise and truncate
+      const errorText = truncateToTokens(sanitizeOutput(lastRun.error), 800);
       contextParts.push('Error Message:');
       contextParts.push(errorText);
     }
     if (lastRun.stderr) {
-      const stderrText = truncateToTokens(lastRun.stderr, 600);
+      const stderrText = truncateToTokens(sanitizeOutput(lastRun.stderr), 600);
       contextParts.push('');
       contextParts.push('Standard Error (stderr):');
       contextParts.push(stderrText);
@@ -87,18 +85,22 @@ export function buildQuestionContext(request) {
 
   // PRIORITY 3: Success output
   if (!hasError && lastRun && lastRun.stdout && lastRun.status !== 'not_run') {
-    const outputText = truncateToTokens(lastRun.stdout, 600);
-    contextParts.push('=== OUTPUT ===');
-    contextParts.push(outputText);
-    contextParts.push('');
+    const outputText = truncateToTokens(sanitizeOutput(lastRun.stdout), 600);
+    if (outputText) {
+      contextParts.push('=== OUTPUT ===');
+      contextParts.push(outputText);
+      contextParts.push('');
+    }
   }
 
   // PRIORITY 4: Assignment
-  const assignmentText = request.assignment?.descriptionMarkdown || request.assignmentText;
+  let assignmentText = request.assignment?.descriptionMarkdown || request.assignmentText;
   const shouldIncludeAssignment = assignmentText && !isErrorQuestion;
 
   if (shouldIncludeAssignment) {
-    const truncatedAssignment = truncateToTokens(assignmentText, 1200);
+    // Ensure checkboxes are checked so the bot recognizes them as done
+    const checkedAssignment = checkChecklist(assignmentText);
+    const truncatedAssignment = truncateToTokens(checkedAssignment, 1200);
     contextParts.push('=== ASSIGNMENT ===');
     contextParts.push(truncatedAssignment);
     contextParts.push('');
@@ -110,67 +112,86 @@ export function buildQuestionContext(request) {
   };
 }
 
+// Add helper to remove comments starting with /* ... */, -- (end-of-line), or # (end-of-line)
+function stripComments(code) {
+  if (!code) return code;
+  // Remove block comments: /* ... */
+  code = code.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Remove SQL/SQL-like single-line comments: -- ...
+  code = code.replace(/--.*$/gm, '');
+  // Remove hash single-line comments: # ...
+  code = code.replace(/#.*$/gm, '');
+  return code;
+}
+
+// Add: sanitize output to remove noisy runner messages like "✅ Program executed successfully."
+function sanitizeOutput(text) {
+  if (!text) return text;
+  const lines = String(text).split(/\r?\n/);
+  const kept = lines.filter(line => {
+    const t = line.trim();
+    if (!t) return false; // drop blank lines to avoid clutter
+    // Common runner success banners (emoji + text)
+    if (/^✅.*executed successfully\.?$/i.test(t)) return false;
+    if (/^(success|ok|passed|completed)\.?$/i.test(t)) return false;
+    // literal "(none)" or "none"
+    if (/^\(none\)$/i.test(t) || /^none$/i.test(t)) return false;
+    // lines that are just checkmark/emoji
+    if (/^[\u2700-\u27BF\u1F300-\u1F6FF\ufe0f\u2600-\u26FF]+$/.test(t)) return false;
+    return true;
+  });
+  return kept.join('\n');
+}
+
+// Add helper to normalize/check checkboxes in markdown assignment text
+function checkChecklist(text) {
+  if (!text) return text;
+  // Convert any markdown unchecked boxes like "[ ]" (with any interior spaces) to checked "[x]"
+  return String(text).replace(/\[\s*\]/g, '[x]');
+}
+
 /**
  * Build context for grading code.
  *
  * @param {Object} request - Grade request object
- * @returns {{ assignmentText: string, userCode: string }}
+ * @returns {{ assignmentText: string, userCode: string, outputText: string }}
  */
 export function buildGradeContext(request) {
-  const assignmentText = truncateToTokens(request.assignmentText || 'No assignment provided', 1000);
-  const userCode = truncateToTokens(request.userCode || 'No code provided', 2000);
+  const assignmentText = truncateToTokens(
+    checkChecklist(request.assignmentText || request.assignment?.descriptionMarkdown || 'No assignment provided'),
+    1000
+  );
 
-  return { assignmentText, userCode };
-}
-
-/**
- * Build context for validating an assignment.
- *
- * @param {Object} request - Validation request object
- * @returns {string} Assembled context text
- */
-export function buildValidationContext(request) {
-  const { assignment, codeFiles = [], environment } = request;
-  const lastRun = environment?.lastRun || {};
-
-  const contextParts = [];
-
-  // Add Assignment
-  if (assignment?.descriptionMarkdown) {
-    contextParts.push('=== ASSIGNMENT ===');
-    contextParts.push(truncateToTokens(assignment.descriptionMarkdown, 1500));
-    contextParts.push('');
-  }
-
-  // Add Output (Prioritized - put before code so the model sees it first/clearly)
-  const stdout = lastRun.stdout || lastRun.consoleDisplay || '';
-  const stderr = lastRun.stderr || '';
-  const error = lastRun.error || '';
-
-  contextParts.push('=== RUN OUTPUT (Most Important) ===');
-  if (stdout) {
-    contextParts.push('Standard Output:');
-    contextParts.push(truncateToTokens(stdout, 900));
-  } else if (error) {
-    contextParts.push('Error: ' + truncateToTokens(error, 500));
+  let userCodeRaw;
+  if (request.codeFiles && request.codeFiles.length > 0) {
+    userCodeRaw = request.codeFiles.map(f => f.source).join('\n\n');
   } else {
-    contextParts.push('(No output generated)');
-  }
-  contextParts.push('');
-
-  // Add Code
-  if (codeFiles.length > 0) {
-    contextParts.push('=== STUDENT CODE ===');
-    codeFiles.forEach((file) => {
-      const codeText = truncateToTokens(file.source || '', 2000);
-      contextParts.push(`File: ${file.path}`);
-      contextParts.push('```' + (file.languageId || ''));
-      contextParts.push(codeText);
-      contextParts.push('```');
-      contextParts.push('');
-    });
+    userCodeRaw = request.userCode || 'No code provided';
   }
 
-  return contextParts.join('\n');
+  // Strip comments before truncation so the grader isn't confused by comments
+  const userCodeStripped = stripComments(userCodeRaw);
+  let userCode = truncateToTokens(userCodeStripped, 2000);
+
+  // Add output
+  const lastRun = request.environment?.lastRun || {};
+  // Apply sanitization to raw outputs to remove runner noise
+  const stdout = sanitizeOutput(lastRun.stdout || lastRun.consoleDisplay || '') || '';
+  const stderr = sanitizeOutput(lastRun.stderr || '') || '';
+  const error = sanitizeOutput(lastRun.error || '') || '';
+
+  let outputText = '';
+
+  // Format output with clear sections for the bot
+  if (error) outputText += `--- error ---\n${error}\n`;
+  if (stderr) outputText += `--- stderr ---\n${stderr}\n`;
+  if (stdout) outputText += `--- stdout ---\n${stdout}\n`;
+
+  if (!outputText) outputText = '(No output generated)';
+
+  // Final sanitization and truncation
+  outputText = sanitizeOutput(outputText);
+  outputText = truncateToTokens(outputText, 1000);
+
+  return { assignmentText, userCode, outputText };
 }
-

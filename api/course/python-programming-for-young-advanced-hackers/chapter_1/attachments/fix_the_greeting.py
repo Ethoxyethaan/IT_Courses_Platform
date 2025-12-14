@@ -1,12 +1,4 @@
-# Fix the Broken Greeting
-# ------------------------
-# This file contains a broken print statement.
-# YOUR JOB: Fix the code so that it prints:
-#   Hello, World!
-# without any errors.
-
-# Broken version:
-# print("Hello, World!)
-
-# Fixed version (uncomment and correct it):
-print("Hello, World!")
+# attachments/fix_the_greeting.py
+# Starter: print the required greeting exactly once.
+# fix the print statement below to match the expected output.
+print("Hello, World!

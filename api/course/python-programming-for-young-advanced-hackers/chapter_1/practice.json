@@ -2,7 +2,7 @@
   "chapterId": "chapter-1",
   "kind": "practice",
   "title": "Chapter 1 – Practice: Hello, Python!",
-  "description": "Hands-on missions for chapter 1 using script mode, the REPL, and basic Python concepts.",
+  "description": "Hands-on missions for chapter 1 using script mode and basic Python concepts.",
   "practices": [
     {
       "id": "p-hello-world-script",
@@ -55,7 +55,7 @@
     },
     {
       "id": "p-repl-playground",
-      "title": "Mission: REPL Playground",
+      "title": "Mission: Simple Script — Print three lines",
       "assignmentResourceUid": "assignments/repl_playground.md",
       "templates": [
         {
@@ -65,33 +65,8 @@
         }
       ],
       "solution": {
-        "expectedInteractions": [
-          {
-            "input": "1 + 2",
-            "expectedRepr": "3"
-          },
-          {
-            "input": "5 * 10",
-            "expectedRepr": "50"
-          },
-          {
-            "input": "10 / 3",
-            "expectedReprContains": "3.3"
-          },
-          {
-            "input": "\"Python\"",
-            "expectedRepr": "'Python'"
-          },
-          {
-            "input": "\"Hello\" + \" \" + \"World\"",
-            "expectedReprContains": "Hello World"
-          },
-          {
-            "input": "print(\"Hello, World!\")",
-            "expectedStdout": "Hello, World!\n"
-          }
-        ],
-        "notes": "This practice is REPL-based; if you simulate it, compare the evaluated value (repr) or stdout for each line. Learners are encouraged to try extra experiments beyond these core interactions."
+        "expectedStdout": "Hello, World!\n3\n50\n",
+        "notes": "Script-mode version: the validator should run the script and compare stdout exactly to the three lines shown in the assignment."
       }
     },
     {
@@ -114,7 +89,8 @@
             "Step 3: Later we could add more features, like asking for their age."
           ],
           "codeLinesShouldContain": [
-            "name = input(",
+            "def getName(",
+            "name = getName(",
             "print(\"Hello, \" + name + \"!\")"
           ]
         },

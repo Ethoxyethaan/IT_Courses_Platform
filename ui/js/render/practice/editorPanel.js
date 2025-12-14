@@ -14,18 +14,21 @@ import { getAceModeForLanguage, getTabSizeForLanguage } from '../../runners/inde
  * @returns {{ panel: HTMLElement, editorHost: HTMLElement, runButton: HTMLElement, validateButton: HTMLElement, runStatus: HTMLElement }}
  */
 export function createEditorPanel({
-  activeTemplates,
-  activeTemplate,
-  onTemplateChange,
-  onRun,
-  onValidate
-}) {
+                                    activeTemplates,
+                                    activeTemplate,
+                                    onTemplateChange,
+                                    onRun,
+                                    onValidate
+                                  }) {
+  // 1. Create Main Container
   const editorPanel = document.createElement('div');
   editorPanel.className = 'practice-panel practice-editor-panel';
 
+  // 2. Create Layout Rows/Cols
   const attachmentsRow = document.createElement('div');
   attachmentsRow.className = 'practice-editor-row';
 
+  // --- LEFT COLUMN: FILES ---
   const attachmentsCol = document.createElement('div');
   attachmentsCol.className = 'practice-attachments';
 
@@ -41,19 +44,22 @@ export function createEditorPanel({
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'practice-attachment-button';
+
+    // Toggle active class
     if (activeTemplate && t.path === activeTemplate.path) {
       btn.classList.add('is-active');
     }
-    btn.textContent = t.path.split('/').slice(-1)[0];
-    btn.addEventListener('click', () => {
-      onTemplateChange(t.path);
-    });
+
+    // Extract filename from path safely
+    btn.textContent = t.path.split('/').pop();
+
+    btn.addEventListener('click', () => onTemplateChange(t.path));
     li.appendChild(btn);
     attachmentsList.appendChild(li);
   });
-
   attachmentsCol.appendChild(attachmentsList);
 
+  // --- RIGHT COLUMN: EDITOR & TOOLBAR ---
   const editorCol = document.createElement('div');
   editorCol.className = 'practice-editor-col';
 
@@ -63,35 +69,33 @@ export function createEditorPanel({
   const runButton = document.createElement('button');
   runButton.type = 'button';
   runButton.className = 'practice-run-button';
-  runButton.textContent = 'Run code & Check output';
+  runButton.textContent = 'Run Code';
+  // Attach Run Listener
+  runButton.addEventListener('click', onRun);
 
   const validateButton = document.createElement('button');
   validateButton.type = 'button';
   validateButton.className = 'practice-run-button practice-validate-button';
   validateButton.textContent = 'Let a teacher validate my assignment';
+  // Attach Validate Listener
+  validateButton.addEventListener('click', onValidate);
 
   const runStatus = document.createElement('span');
   runStatus.className = 'practice-run-status muted';
 
-  editorToolbar.appendChild(runButton);
-  editorToolbar.appendChild(validateButton);
-  editorToolbar.appendChild(runStatus);
+  editorToolbar.append(runButton, validateButton, runStatus);
 
+  // Editor Host (Removed static ID to prevent conflicts)
   const editorHost = document.createElement('div');
-  editorHost.id = 'practice-editor';
   editorHost.className = 'practice-editor';
 
-  editorCol.appendChild(editorToolbar);
-  editorCol.appendChild(editorHost);
+  // Note: Keyboard shortcuts are handled via Ace commands in practiceTabRenderer.js
 
-  attachmentsRow.appendChild(attachmentsCol);
-  attachmentsRow.appendChild(editorCol);
+  editorCol.append(editorToolbar, editorHost);
 
+  // 3. Assemble
+  attachmentsRow.append(attachmentsCol, editorCol);
   editorPanel.appendChild(attachmentsRow);
-
-  // Attach event listeners
-  runButton.addEventListener('click', onRun);
-  validateButton.addEventListener('click', onValidate);
 
   return {
     panel: editorPanel,
@@ -158,4 +162,3 @@ export function createChatPanel() {
 
   return { panel: chatPanel, chatBody };
 }
-
